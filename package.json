@@ -1,0 +1,10 @@
+{
+  "name": "watchout",
+  "version": "1.0.1",
+  "description": "Asteroids-style game implemented using D3.js",
+  "main": "client/index.html",
+  "scripts": {
+    "test": "echo 'Error: no test specified'",
+    "start": "open client/index.html"
+  }
+}
