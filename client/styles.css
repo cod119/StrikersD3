@@ -3,3 +3,22 @@
 /* Note: an asteroid image is included in this repo.
 Feel free to use it if you like. */
 
+body {
+    font-family: Helvetica;
+}
+
+.player {
+    fill : red;
+}
+
+
+svg.collision {
+    background: url("media/bg.jpg");
+    background-size: cover;
+    fill: white;
+}
+
+svg .enemy {
+    background-image: url("asteroid.png");
+
+}
