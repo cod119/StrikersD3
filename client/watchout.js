@@ -8,6 +8,8 @@ var gameSetting = {
   rPlayer: 10
 };
 
+gameSetting.nEnemies = prompt("Enter POSITIVE number of enemies, I said POSITIVE");
+
 var gameScore = {
   bestScore: 0,
   now: 0,
@@ -41,8 +43,9 @@ var canvas = d3.select("body").append("svg:svg")
               .attr("height", gameSetting.height);
 
 var enemies = function(data) {
-  var circles = canvas.selectAll(".enemy")
-                .data(data, function(d) { return d.id; })
+
+var circles = canvas.selectAll(".enemy")
+                .data(data, function(d) { return d.id; });
 
   circles.enter().append("circle")
          .attr("cx", function(d) { return d.cx; })
@@ -92,6 +95,8 @@ var collision = function(circle1, circle2) {
   var result = false;
   // debugger;
   var radiusTotal = +circle1.attr("r") + +circle2.attr("r");
+  // Using Pythogorean Theorem
+  // 피타고라스 정의 사용
   var distance = Math.sqrt(Math.pow(+circle1.attr("cx") - +circle2.attr("cx"), 2) + Math.pow(+circle1.attr("cy") - +circle2.attr("cy"), 2));
   console.log(radiusTotal);
   console.log(distance);
@@ -115,6 +120,17 @@ var player = canvas.selectAll(".player")
                       return gameSetting.height / 2;
                    })
                    .attr("r", gameSetting.rPlayer).call(drag);
+
+var player2 = canvas.selectAll(".player")
+                  .data([{"id":"player","cx":gameSetting.width/2, "cy":gameSetting.height/2, "r":gameSetting.rPlayer}])
+                  .enter()
+                  .append("circle").attr("class", "player")
+                  .attr("cx", function(d) {
+                     return gameSetting.width / 2;
+                  })
+                  .attr("cy", function(d) {
+                     return gameSetting.height / 2;
+                  });
 
 // randomize enemies' position again
 setInterval(function() {
