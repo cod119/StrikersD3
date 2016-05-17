@@ -113,10 +113,13 @@ var missile = function(whose) {
     var missiles = canvas.selectAll('.playerMissile')
                   .data(this.data, function(d) { return d.id; });
     missiles.enter().append('circle')
+          .attr("id", function(d) { console.log("update");return d.id; })
           .attr("cx", function(d) { return d.cx; })
           .attr("cy", function(d) { return d.cy; })
           .attr("r", function(d) { return d.r; })
-          .attr("class", "playerMissle");
+          .attr("class", "playerMissle")
+          .transition().ease("cubic-in-out").duration(300)
+          .attr("cy", function(d) { return 0; });
 
 
 
