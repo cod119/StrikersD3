@@ -66,6 +66,7 @@ var drag = d3.behavior.drag()
         d.cy += d3.event.dy;
         var newCx = + d3.select(this).attr("cx") + d3.event.dx;
         var newCy = + d3.select(this).attr("cy") + d3.event.dy;
+
         if (d.cx < gameSetting.padding) {
           d.cx = gameSetting.padding;
           newCx = gameSetting.padding;
