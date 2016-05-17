@@ -5,10 +5,13 @@ var gameSetting = {
   nEnemies: 100,
   rEnemies: function() {return 5 + Math.random() * 10;},
   padding: 10,
-  rPlayer: 10
+  rPlayer: 10,
+  keySensitivity: 0,
+  rMissile : 3
 };
 
-gameSetting.nEnemies = prompt("Enter POSITIVE number of enemies, I said POSITIVE");
+//gameSetting.nEnemies = prompt("Enter POSITIVE number of enemies, I said POSITIVE");
+gameSetting.nEnemies = 10;
 
 var gameScore = {
   bestScore: 0,
@@ -58,6 +61,77 @@ var circles = canvas.selectAll(".enemy")
          .attr("cy", function(d) { return d.cy; });
 };
 
+
+var missile = function(whose) {
+  this.whose = whose;
+  this.cnt = 0;
+  this.list = [];
+  this.data = [];
+  this.set = function() {
+    this.cnt += 1;
+    var cx = +this.whose.attr("cx");
+    var cy = +this.whose.attr("cy");
+    console.log('player position from missile : ', cx, cy);
+    this.data.push({"id": this.cnt, "r": gameSetting.rMissile, "cx": cx, "cy": cy});
+  };
+  this.update = function() {
+    //to add to cy and check if the missile is out of canvas and del
+    for (var i = this.data.length - 1; i >= 0; i--) {
+      this.data[i].cy -= 20;
+      if (this.data[i].cy < gameSetting.padding) {
+        this.data.splice(i, 1);
+      }
+    }
+    var missiles = canvas.selectAll('.playerMissile')
+                      .data(this.data, function(d) { return d.id; });
+
+
+    // missiles.enter().append('circle')
+    //         .attr("cx", function(d) { return d.cx; })
+    //         .attr("cy", function(d) { return d.cy; })
+    //         .attr("r", function(d) { return d.r; })
+    //         .attr("class", "playerMissle");
+
+
+
+    missiles.transition().ease("cubic-in-out").duration(10)
+            .attr("r", function(d) { return d.r; })
+            .attr("id", function(d) { console.log("update");return d.id; })
+            .attr("cx", function(d) { return d.cx; })
+            .attr("cy", function(d) { return d.cy; });
+
+    // missiles.exit().remove();
+    // // console.log('data is', this.data);
+  };
+  this.enterRemove = function() {
+    for (var i = this.data.length - 1; i >= 0; i--) {
+      this.data[i].cy -= 20;
+      if (this.data[i].cy < gameSetting.padding) {
+        this.data.splice(i, 1);
+      }
+    }
+    var missiles = canvas.selectAll('.playerMissile')
+                  .data(this.data, function(d) { return d.id; });
+    missiles.enter().append('circle')
+          .attr("cx", function(d) { return d.cx; })
+          .attr("cy", function(d) { return d.cy; })
+          .attr("r", function(d) { return d.r; })
+          .attr("class", "playerMissle");
+
+
+
+    // missiles.attr("r", function(d) { return d.r; })
+    //       .attr("id", function(d) { console.log("update");return d.id; })
+    //       .attr("cx", function(d) { return d.cx; })
+    //       .attr("cy", function(d) { return d.cy; });
+
+    missiles.exit().remove();
+    // console.log('data is', this.data);
+  };
+};
+
+
+
 // helper function
   // happens when user drags the red dot
 var drag = d3.behavior.drag()
@@ -90,6 +164,8 @@ var drag = d3.behavior.drag()
                        .attr("cy", function(d) { return newCy; });
     });
 
+
+
   // determines whether two circles have collided or not
   // accepts two d3 objects
 var collision = function(circle1, circle2) {
@@ -99,8 +175,8 @@ var collision = function(circle1, circle2) {
   // Using Pythogorean Theorem
   // 피타고라스 정의 사용
   var distance = Math.sqrt(Math.pow(+circle1.attr("cx") - +circle2.attr("cx"), 2) + Math.pow(+circle1.attr("cy") - +circle2.attr("cy"), 2));
-  console.log(radiusTotal);
-  console.log(distance);
+  // console.log(radiusTotal);
+  // console.log(distance);
   if (radiusTotal > distance) {
     result = true;
   }
@@ -132,6 +208,121 @@ var player2 = canvas.selectAll(".player")
                   .attr("cy", function(d) {
                      return gameSetting.height / 2;
                   });
+
+var playerWeapon = new missile(player);
+
+// for keyboard controller
+  //up, down, left, right, missile
+var keyState = [false, false, false, false, false];
+var move = function(unit, dir) {
+  // console.log('dir is : ', dir);
+  // speed is key sensitivity;
+  var speed = 5;
+  var d = {
+    "0": {x: 0, y: speed},
+    "1": {x: 0, y: -speed},
+    "2": {x: -speed, y: 0},
+    "3": {x: speed, y: 0},
+  };
+  var newcx = +unit.attr('cx') + d[dir].x;
+  var newcy = +unit.attr('cy') + d[dir].y;
+
+  if (newcx > gameSetting.width - gameSetting.padding) {
+    newcx = gameSetting.width - gameSetting.padding;
+  } else if (newcx < gameSetting.padding) {
+    newcx = gameSetting.padding;
+  }
+  if (newcy > gameSetting.height - gameSetting.padding) {
+    newcy = gameSetting.height - gameSetting.padding;
+  } else if (newcy <  gameSetting.padding) {
+    newcy = gameSetting.padding;
+  }
+  // console.log("direction is set");
+  unit.attr("cx", function(d) { return newcx; })
+        .attr("cy", function(d) { return newcy; });
+};
+var keyToMove = function(keyState) {
+  for (var i = 0; i < 4; i++) {
+    if (keyState[i]) move(player, i);
+  }
+
+};
+
+
+
+// check player pulled the trigger by keyState, and shoot missils & update their position
+
+var fire = function(unit, onfire) {
+  unit.update();
+  //to check if player pull the trigger
+  if (onfire) unit.set();
+};
+var keyToFire = function(keyState) {
+  fire(playerWeapon, keyState[4]);
+  console.log('exe');
+};
+
+
+
+
+var keyboardDown = d3.select('body').on('keydown', function() {
+  console.log('keydown');
+  if (d3.event.keyCode == 40) {
+    keyToMove(keyState);
+    keyState[0] = true;
+  }
+  if (d3.event.keyCode == 38) {
+    keyToMove(keyState);
+    keyState[1] = true;
+  }
+  if (d3.event.keyCode == 37) {
+    keyToMove(keyState);
+    keyState[2] = true;
+  }
+  if (d3.event.keyCode == 39) {
+    keyToMove(keyState);
+    keyState[3] = true;
+  }
+  if (d3.event.keyCode == 32) {
+    playerWeapon.set();
+    keyState[4] = true;
+  }
+});
+
+var keyboardUp = d3.select('body').on('keyup', function() {
+  console.log('keyup');
+  if (d3.event.keyCode == 40) {
+    keyState[0] = false;
+  }
+  if (d3.event.keyCode == 38) {
+    keyState[1] = false;
+  }
+  if (d3.event.keyCode == 37) {
+    keyState[2] = false;
+  }
+  if (d3.event.keyCode == 39) {
+    keyState[3] = false;
+  }
+  if (d3.event.keyCode == 32) {
+    keyState[4] = false;
+  }
+});
+
+// executes moving according to keyState
+setInterval(function() {
+  keyToMove(keyState);
+  // keyToFire(keyState);
+  // playerWeapon.update();
+  playerWeapon.enterRemove();
+}, 30);
+
+setInterval(function() {
+  if (keyState[4]) playerWeapon.set();
+}, 500);
+
+
+
+
 
 // randomize enemies' position again
 setInterval(function() {

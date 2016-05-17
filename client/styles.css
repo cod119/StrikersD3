@@ -22,3 +22,7 @@ svg .enemy {
     background-image: url("asteroid.png");
 
 }
+
+svg .playerMissile {
+  fill: blue;
+}
