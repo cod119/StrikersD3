@@ -4,7 +4,7 @@ var gameSetting = {
   width:770,
   height: 1000,
   nEnemies: 100,
-  rEnemies: function() {return 5 + Math.random() * 10;},
+  rEnemies: function() {return 10 + Math.random() * 5;},
   padding: 10,
   rPlayer: 50,
   keySensitivity: 0,
@@ -13,8 +13,15 @@ var gameSetting = {
   //settings for enemy
   enemyMissileNum: 5,
   enemyTransitionDuration: 4999,
-  enemyMissileTransitionDuration: 8000,
-  enemyMissileFrequency: 6000
+  enemyMissileTransitionDuration: 7000,
+  enemyMissileFrequency: 3000,
+  //settings for boss
+  enemyBossMissileNum: 30,
+  enemyBossMissileFrequency: 1500,
+  enemyBossTransitionDuration: 4000,
+  enemyBossSize: 90,
+  enemyBossHp: 1000,
+  howManyKillToBoss: 30
 };
 
 //gameSetting.nEnemies = prompt("Enter POSITIVE number of enemies, I said POSITIVE");
@@ -36,19 +43,19 @@ var convertAxes = {
 };
 
 // create data for enemies with randomized cx, cy
-// function makeEnemiesData(n) {
-//   // holds json objects (for data)
-//   var container = [];
-//   for (var j = 0; j < n; j++) {
-//     container[j] = {
-//       "id": j,
-//       "cx": convertAxes.x(Math.random() * 100),
-//       "cy": convertAxes.y(Math.random() * 70),
-//       "r": gameSetting.rEnemies()
-//     };
-//   }
-//   return container;
-// }
+function makeEnemiesData(n) {
+  // holds json objects (for data)
+  var container = [];
+  for (var j = 0; j < n; j++) {
+    container[j] = {
+      "id": j,
+      "cx": convertAxes.x(Math.random() * 100),
+      "cy": convertAxes.y(Math.random() * 70),
+      "r": gameSetting.rEnemies()
+    };
+  }
+  return container;
+}
 
 // creates a game board and enemies
 var canvas = d3.select("#map").append("svg:svg")
@@ -56,24 +63,24 @@ var canvas = d3.select("#map").append("svg:svg")
               .attr("height", gameSetting.height)
               .attr('transform','translate(0,0)');
 
+var enemyDatalist = [];
 
+var enemies = function(data) {
 
-// var enemies = function(data) {
-//
-//   var circles = canvas.selectAll(".enemy")
-//                 .data(data, function(d) { return d.id; });
-//
-//   circles.enter().append("circle")
-//          .attr("cx", function(d) { return d.cx; })
-//          .attr("cy", function(d) { return d.cy; })
-//          .attr("r", function(d) { return d.r; })
-//          .attr("class", "enemy collide");
-//
-//   circles.transition().ease("cubic-in-out").duration(gameSetting.enemyTransitionDuration)
-//          .attr("cx", function(d) { return d.cx; })
-//          .attr("cy", function(d) { return d.cy; });
-//
-// };
+  var circles = canvas.selectAll(".enemy")
+                .data(data, function(d) { return d.id; });
+
+  circles.enter().append("circle")
+         .attr("cx", function(d) { return d.cx; })
+         .attr("cy", function(d) { return d.cy; })
+         .attr("r", function(d) { return d.r; })
+         .attr("class", "enemy collide");
+
+  circles.transition().ease("cubic-in-out").duration(gameSetting.enemyTransitionDuration)
+         .attr("cx", function(d) { return d.cx; })
+         .attr("cy", function(d) { return d.cy; });
+
+};
 
 
 var makeEnemies = function() {
@@ -115,7 +122,7 @@ var makeEnemies = function() {
 };
 
 
-var enemyMissileFire = function(player) {
+var enemyMissileFire = function(player, bulletnum) {
   var playerX = player.attr('x') + player.attr('width') / 2;
   var playerY = player.attr('y') + player.attr('height') / 2;
 
@@ -125,7 +132,7 @@ var enemyMissileFire = function(player) {
     var thisX = +d3.select(this).attr('cx');
     var thisY = +d3.select(this).attr('cy');
 
-    var num = gameSetting.enemyMissileNum;
+    var num = bulletnum;
     for (var j = 0; j < num; j++) {
       var pi = Math.PI * 2 / num * j;
       // console.log('pi is', pi);
@@ -436,7 +443,12 @@ var keyboardUp = d3.select('body').on('keyup', function() {
 
 // executes moving according to keyState
 $(document).ready(function() {
-
+var sound = new Audio('./static/bgm3.mp3');
+sound.addEventListener('ended', function() {
+    this.currentTime = 0;
+    this.play();
+}, false);
+sound.play();
 
   setInterval(function() {
     keyToMove(keyState);
@@ -449,15 +461,63 @@ $(document).ready(function() {
     if (keyState[4]) playerWeapon.set();
   }, 200);
 
-  setInterval(function() {
-    enemyMissileFire(player);
+  window.boss = false;
+  window.bossHp = gameSetting.enemyBossHp;
+
+  var frequency = setInterval(function() {
+    if (!boss) {
+      enemyMissileFire(player, gameSetting.enemyMissileNum);
+    } else {
+      enemyMissileFire(player, gameSetting.enemyBossMissileNum);
+    }
   }, gameSetting.enemyMissileFrequency);
 
 
 
   // randomize enemies' position again
+  var one = false;
   setInterval(function() {
-    enemies(makeEnemiesData(gameSetting.nEnemies));
+    if (gameScore.nKilled < gameSetting.howManyKillToBoss) {
+      console.log('not yet boss');
+      enemies(makeEnemiesData(gameSetting.nEnemies));
+    } else if (gameScore.nKilled >= gameSetting.howManyKillToBoss && canvas.select('.enemy')[0][0] === null && !boss && !one) {
+      console.log('boss is comming');
+      one = true;
+      sound.pause();
+      sound = new Audio('./static/boss.mp3');
+      sound.addEventListener('ended', function() {
+          this.currentTime = 0;
+          this.play();
+      }, false);
+      sound.play();
+
+
+      boss = true;
+      gameSetting.enemyTransitionDuration = gameSetting.enemyBossTransitionDuration;
+      gameSetting.enemyMisileNum = gameSetting.enemyBossMissileNum;
+      gameSetting.enemyMissileFrequency = gameSetting.enemyBossMissileFrequency;
+      clearInterval(frequency);
+      setInterval(function() {
+        if (!boss) {
+          enemyMissileFire(player, gameSetting.enemyMissileNum);
+        } else {
+          enemyMissileFire(player, gameSetting.enemyBossMissileNum);
+        }
+      }, gameSetting.enemyMissileFrequency);
+
+      var data = makeEnemiesData(1);
+      data[0].r = gameSetting.enemyBossSize;
+      enemies(data);
+      return;
+    } else if (boss && bossHp > 0) {
+      console.log('boss is here');
+      var datam = makeEnemiesData(1);
+      datam[0].r = gameSetting.enemyBossSize;
+      console.log('datam is',datam);
+      enemies(datam);
+
+      console.log(bossHp);
+    }
   }, gameSetting.enemyTransitionDuration);
 
 
@@ -513,32 +573,98 @@ $(document).ready(function() {
 
   setInterval(function() {
     var enemy = d3.selectAll('.enemy');
-    enemy.each(function(d, i) {
-      var that = this;
-      d3.selectAll('.playerMissile').each(function(d, i) {
-        var ishit = collision(d3.select(that), d3.select(this));
-        var cx = d3.select(that).attr("cx");
-        var cy = d3.select(that).attr("cy");
-        var r = d3.select(that).attr("r") * 6;
-        if (ishit) {
-          gameScore.nKilled++;
-          d3.select(that).remove();
-          var explosion = canvas
-            .append("svg:image")
-            .attr("xlink:href", "static/explosion.gif")
-            .attr("width", r)
-            .attr("height", r)
-            .attr("x", cx - r/2)
-            .attr("y",cy - r/2);
-          d3.select(".killed").select("span")
-                                .text(gameScore.nKilled);
-          setTimeout(function() {
-              explosion.remove();
-          }, 1000);
-        }
-      });
+    if (!boss) {
+      enemy.each(function(d, i) {
+        var that = this;
+        d3.selectAll('.playerMissile').each(function(d, i) {
+          var ishit = collision(d3.select(that), d3.select(this));
+          var cx = d3.select(that).attr("cx");
+          var cy = d3.select(that).attr("cy");
+          var r = d3.select(that).attr("r") * 6;
+          if (ishit) {
+            var sound = new Audio('./static/explosion.mp3');
+            sound.play();
+            gameScore.nKilled++;
+            d3.select(that).remove();
+            var explosion = canvas
+              .append("svg:image")
+              .attr("xlink:href", "static/explosion.gif")
+              .attr("width", r)
+              .attr("height", r)
+              .attr("x", cx - r/2)
+              .attr("y",cy - r/2);
+            d3.select(".killed").select("span")
+                                  .text(gameScore.nKilled);
+            setTimeout(function() {
+                explosion.remove();
+            }, 1000);
+          }
+        });
 
-    });
+      });
+    } else {
+      enemy.each(function(d, i) {
+        var that = this;
+        d3.selectAll('.playerMissile').each(function(d, i) {
+          var ishit = collision(d3.select(that), d3.select(this));
+          var cx = d3.select(that).attr("cx");
+          var cy = d3.select(that).attr("cy");
+          var r = d3.select(that).attr("r") * 6;
+          if (ishit) {
+            d3.select(that).style("fill", "red");
+            setInterval(function() {
+              d3.select(that).style("fill", "white");
+            }, 200);
+            bossHp--;
+          }
+          if (ishit && bossHp === 0) {
+            sound.pause();
+            sound = new Audio('./static/explosion.mp3');
+            sound.play();
+            sound = new Audio('./static/fin.mp3');
+            sound.addEventListener('ended', function() {
+                this.currentTime = 0;
+                this.play();
+            }, false);
+            sound.play();
+
+            gameScore.nKilled++;
+            d3.select(that).remove();
+            var explosion = canvas
+              .append("svg:image")
+              .attr("xlink:href", "static/explosion.gif")
+              .attr("width", r)
+              .attr("height", r)
+              .attr("x", cx - r/2)
+              .attr("y",cy - r/2);
+            d3.select(".killed").select("span")
+                                  .text(gameScore.nKilled);
+            setTimeout(function() {
+                explosion.remove();
+                canvas.append("svg:image").attr("class", "clear")
+                .attr("xlink:href", "static/gameclear.png")
+                .attr("id", 1)
+                .attr("x", function(d) {
+                   return gameSetting.width / 2 - gameSetting.width / 3;
+                })
+                .attr("y", function(d) {
+                   return 0;
+                })
+                .attr("width", gameSetting.width * 2 / 3)
+                .attr("height", gameSetting.width / 3)
+                .transition().duration(1000)
+                .attr("x", function(d) {
+                   return gameSetting.width / 2 - gameSetting.width / 3;
+                })
+                .attr("y", function(d) {
+                   return gameSetting.height / 2 - gameSetting.width / 6;
+                });
+            }, 2000);
+          }
+        });
+
+      });
+    }
   }, 50);
 
   // updates the current game score

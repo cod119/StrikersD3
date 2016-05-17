@@ -20,16 +20,16 @@ svg.collision {
 
 svg .enemy {
     background-image: url("asteroid.png");
-    fill: white;
+    fill: #f8f4e6;
 
 }
 
 svg .playerMissile {
-  fill: yellow;
+  fill: #e9546b;
 }
 
 svg .enemyMissile {
-  fill: gray;
+  fill: yellow;
 }
 @keyframes animatedBackground {
     from { background-position: 0 100%; }
