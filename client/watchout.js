@@ -13,7 +13,8 @@ var gameSetting = {
   //settings for enemy
   enemyMissileNum: 5,
   enemyTransitionDuration: 4999,
-  enemyMissileTransitionDuration: 7000,
+  enemyMissileTransitionDuration: 5000,
+  // enemyMissileTransitionDuration: 7000
   enemyMissileFrequency: 3000,
   //settings for boss
   enemyBossMissileNum: 30,
